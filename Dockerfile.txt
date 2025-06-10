@@ -1,23 +1,25 @@
-# Base image with Python
 FROM python:3.10-slim
 
-# Install dependencies for tesseract
-RUN apt-get update && \
-    apt-get install -y tesseract-ocr libglib2.0-0 libsm6 libxext6 libxrender-dev && \
-    apt-get clean
+# Install tesseract system dependencies
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr libglib2.0-0 libsm6 libxext6 libxrender-dev && apt-get clean
 
-# Set working directory
 WORKDIR /app
 
-# Copy code and install Python packages
-COPY . /app
-RUN pip install --no-cache-dir -r requirements.txt
+# 👉 Copy only requirements.txt first
+COPY requirements.txt .
 
-# Set environment variable for Tesseract
+# ✅ Install dependencies (this layer gets cached)
+RUN pip install --no-cache-dir --no-deps torch && \
+    pip install --no-cache-dir -r requirements.txt
+
+
+
+# 👉 Now copy your source code
+COPY . .
+
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
 
-# Expose port
 EXPOSE 5000
 
-# Run the Flask app
 CMD ["python", "app.py"]
